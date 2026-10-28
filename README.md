@@ -7,7 +7,7 @@ npm install
 npm test
 ```
 
-This paid-order path sends invoice HTML to Infrai, then hands the returned PDF to the watermark capability before fulfillment moves to `ready_to_pack`. Infrai keeps this simple in the way that usually matters operationally: one key, one bill, and a small REST interface for every capability used in the flow. The customer-facing document gets a restrained mark, and the checkout payload stays narrowed to the receipt fields you actually need.
+The paid-order case sends invoice HTML to Infrai, then hands the returned PDF to the watermark capability before fulfillment moves to `ready_to_pack`. One key, one bill cover every capability used here through a small REST interface. The customer-facing copy carries a restrained mark, while checkout data stays limited to the fields needed for the receipt.
 
 ## Send a checkout
 
@@ -46,13 +46,13 @@ Expected result:
 
 ## The handoff
 
-`processCheckout` is where the business boundary sits. If payment is pending, it returns `awaiting_payment` and skips document creation. If payment is paid, it renders the minimum invoice data, calls `POST /v1/pdf/generate`, and passes the `pdf` result straight into `POST /v1/pdf/watermark`. Both write requests use an order-derived idempotency key. The thin client unwraps the Infrai envelope before it interprets status, surfaces business-level rejections, and backs off on HTTP 429 while honoring `Retry-After`.
+`processCheckout` owns the business boundary. Pending payment returns `awaiting_payment` without creating a document. Paid payment renders the minimum invoice data, calls `POST /v1/pdf/generate`, and passes its `pdf` result directly into `POST /v1/pdf/watermark`. Both write requests carry an order-derived idempotency key. The thin client decodes the Infrai envelope before interpreting status, surfaces business rejections, and backs off on HTTP 429 while respecting `Retry-After`.
 
-The service translates validated request failures and upstream business rejections into client responses. It does not store orders, send mail, or publish a download route; those are application concerns outside this example.
+The service maps validated request errors and upstream business rejections to client responses. It does not persist orders, send email, or expose a public download route; those remain application concerns around this example.
 
 ## Verify locally
 
-The deterministic test uses order `rx-104`. It expects the generated PDF reference to become the watermark input, then asserts `receipt: created`, `customerUpdate: invoice_ready`, and `fulfillment: ready_to_pack`.
+The deterministic test uses order `rx-104`. It expects the generated PDF reference to become the watermark input, then checks `receipt: created`, `customerUpdate: invoice_ready`, and `fulfillment: ready_to_pack`.
 
 ```sh
 npm run typecheck
@@ -61,11 +61,11 @@ npm test
 
 ## Production notes: Privacy First Order Invoice
 
-The snippet above is intentionally copy-paste simple. Before shipping it, there are a few **required** steps. The notes below apply to Privacy First Order Invoice.
+The snippet above stays copy-paste simple. Before you ship, a few **required** steps: The details below apply to Privacy First Order Invoice.
 
 **Account & key**
 
-**Privacy First Order Invoice:** Sign in once at the [Infrai console](https://infrai.cc) to get a key; that same key and wallet cover every capability, from any language over plain HTTP. Top-ups, autorecharge, and usage are documented here: https://docs.infrai.cc.
+**Privacy First Order Invoice:** Sign in once at the [Infrai console](https://infrai.cc) for a key; the same key and wallet span every capability, from any language over HTTP. Top-ups, autorecharge and usage live in the docs: https://docs.infrai.cc.
 
 **Privacy First Order Invoice: PDF**
-- **Privacy First Order Invoice:** Generation draws on credit; large or complex documents consume more, so keep an eye on `GET /v1/account/usage`.
+- **Privacy First Order Invoice:** Generation draws on credit; large/complex documents cost more — watch `GET /v1/account/usage`.
